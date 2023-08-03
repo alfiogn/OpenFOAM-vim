@@ -1,0 +1,180 @@
+#!/bin/bash
+# Author
+#    Giorgio Negrini
+#
+# Script
+#    install
+#
+# Description
+#    Installs OpenFOAM-vim extension for OpenFOAM.
+#
+#------------------------------------------------------------------------------
+cd ${0%/*} || exit 1
+
+error() {
+    exec 1>&2
+    while [ "$#" -ge 1 ]; do echo "$1"; shift; done
+    exit 1
+}
+
+[[ ! $WM_PROJECT = "" ]] || error "No OpenFOAM was found"
+
+# Color definition for nice output and playing with bash
+#------------------------------------------------------------------------------
+red='\e[0;31m'
+green='\e[0;32m'
+nc='\e[0m'
+
+# Checking if .vim directories are available and create if bool = false
+#------------------------------------------------------------------------------
+if [ ! -d $HOME/.vim ]; then
+    mkdir -p $HOME/.vim
+fi
+
+if [ ! -d $HOME/.vim/syntax ]; then
+    mkdir -p $HOME/.vim/syntax
+fi
+
+if [ ! -d $HOME/.vim/syntax/OpenFOAM ]; then
+    mkdir -p $HOME/.vim/syntax/OpenFOAM
+fi
+
+if [ ! -d $HOME/.vim/indent ]; then
+    mkdir -p $HOME/.vim/indent
+fi
+
+if [ ! -d $HOME/.vim/ftdetect ]; then
+    mkdir -p $HOME/.vim/ftdetect
+fi
+
+
+# COLORS
+#------------------------------------------------------------------------------
+ORANGE='\033[0;33m'
+BORANGE='\033[1;33m'
+GREEN='\033[0;36m'
+BGREEN='\033[1;36m'
+BLUE='\033[0;34m'
+BBLUE='\033[1;34m'
+
+# Copy files only if the copied files are newer [-u]
+#------------------------------------------------------------------------------
+echo -e "\nInstalling OpenFOAM-vim for "$WM_PROJECT-$WM_PROJECT_VERSION"...\n"
+cp -r syntax/* $HOME/.vim/syntax/
+cp ftdetect/* $HOME/.vim/ftdetect/
+cp indent/* $HOME/.vim/indent/
+echo -e "\n${ORANGE}You can add custom highlightings in your local version of OpenFOAM-vim:${nc}"
+echo -e "    syntax keyword custom<Type>\n    highlight link custom<Type> OpenFOAM_<type>\n"
+
+
+# Function 1 and 2
+general=$HOME/.vim/syntax/OpenFOAM/general/general.vim
+functions=$(grep -hr "TypeName(" $FOAM_SRC/OpenFOAM/primitives/functions/Function[12]* | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | tr '\n' ' ')
+for f in $functions
+do
+    sed -i "s/__FUNCTIONS12__/\\\\ $f\n    __FUNCTIONS12__/g" $general
+done
+sed -i "/__FUNCTIONS12__/d" $general
+
+# Boundary conditions
+BC=$HOME/.vim/syntax/OpenFOAM/0/BC.vim
+bcs=$(grep -rl "class [a-zA-Z0-9]*FvPatch[A-Za-z]*Field" $FOAM_SRC | xargs dirname | awk -F'/' '{print $NF}' | sort | uniq | xargs -I file find $FOAM_SRC -name fileFvPatch*Field.H | xargs grep -h "TypeName(" | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | sort | uniq | sed -e "s/FvPatch::typeName_//g" -e "s/^[a-zA-Z0-9]*:://g" | tr '\n' ' ')
+for b in $bcs
+do
+    sed -i "s/__BCS__/\\\\ $b\n    __BCS__/g" $BC
+done
+sed -i "/__BCS__/d" $BC
+# - keywords
+bcskeys=$(grep -rl "class [a-zA-Z0-9]*FvPatch[A-Za-z]*Field" $FOAM_SRC | xargs dirname | awk -F'/' '{print $NF}' | sort | uniq | xargs -I file find $FOAM_SRC -name fileFvPatch*Field.C | xargs grep [dD]ict | grep -o "\"[a-zA-Z]*\"" | sed "s/\"//g" | sort | uniq | tr '\n' ' ')
+for k in $bcskeys
+do
+    sed -i "s/__BCSKEYS__/\\\\ $k\n    __BCSKEYS__/g" $BC
+done
+sed -i "/__BCSKEYS__/d" $BC
+
+# Mesh changers
+DYN=$HOME/.vim/syntax/OpenFOAM/constant/dynamicMeshDict.vim
+ms=$(grep -hr "TypeName(" $FOAM_SRC/dynamicMesh/motionSolvers/ $FOAM_SRC/rigidBody* $FOAM_SRC/sixDoFRigidBody* | grep -i Motion | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | tr '\n' ' ')
+for m in $ms
+do
+    sed -i "s/__MS__/\\\\ $m\n    __MS__/g" $DYN
+done
+sed -i "/__MS__/d" $DYN
+sms=$(grep -hr "TypeName(" $FOAM_SRC/dynamicMesh/motionSolvers/ $FOAM_SRC/rigidBody* $FOAM_SRC/sixDoFRigidBody* | grep -vi Motion | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | sort | uniq | tr '\n' ' ')
+for s in $sms
+do
+    sed -i "s/__SMS__/\\\\ $s\n    __SMS__/g" $DYN
+done
+sed -i "/__SMS__/d" $DYN
+# - keywords
+mckeys=$(find $FOAM_SRC/dynamicMesh/ $FOAM_SRC/rigidBody* $FOAM_SRC/sixDoFRigidBody* -name "*.C" -type f | xargs grep -i Dict | grep -v Coeffs | grep -o "\"[a-zA-Z0-9]*\"" | sort | uniq | sed "s/\"//g" | tr '\n' ' ')
+for m in $mckeys
+do
+    sed -i "s/__MCKEYS__/\\\\ $m\n    __MCKEYS__/g" $DYN
+done
+sed -i "/__MCKEYS__/d" $DYN
+
+# Function objects
+CD=$HOME/.vim/syntax/OpenFOAM/system/controlDict.vim
+functions=$(grep -hr "TypeName(" $FOAM_SRC/functionObjects | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | sort | uniq | tr '\n' ' ')
+for f in $functions
+do
+    sed -i "s/__FOS__/\\\\ $f\n    __FOS__/g" $CD
+done
+sed -i "/__FOS__/d" $CD
+# - keywords
+fokeys=$(find $FOAM_SRC/functionObjects -name "*.C" -type f | xargs grep -i Dict | grep -v Coeffs | grep -o "\"[a-zA-Z0-9]*\"" | sort | uniq | sed "s/\"//g" | tr '\n' ' ')
+for f in $fokeys
+do
+    sed -i "s/__FOKEYS__/\\\\ $f\n    __FOKEYS__/g" $CD
+done
+sed -i "/__FOKEYS__/d" $CD
+
+# Algebraic solvers
+FVS=$HOME/.vim/syntax/OpenFOAM/system/fvSolution.vim
+sol=$(find $FOAM_SRC/OpenFOAM/matrices/lduMatrix/*ers -name "*.H" | xargs grep -h "TypeName(" | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | sort | uniq | tr '\n' ' ')
+for s in $sol
+do
+    sed -i "s/__SOL__/\\\\ $s\n    __SOL__/g" $FVS
+done
+sed -i "/__SOL__/d" $FVS
+
+# Discretization schemes
+FVS=$HOME/.vim/syntax/OpenFOAM/system/fvSchemes.vim
+sch=$(grep -hr "TypeName(" $FOAM_SRC/finiteVolume/finiteVolume/*Schemes $FOAM_SRC/finiteVolume/interpolation/ | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | tr '\n' ' ')
+for s in $sch
+do
+    sed -i "s/__SCH__/\\\\ $s\n    __SCH__/g" $FVS
+done
+sed -i "/__SCH__/d" $FVS
+
+# Topo sets
+SFD=$HOME/.vim/syntax/OpenFOAM/system/setFieldsDict.vim
+topo=$(grep -hr "TypeName(" $FOAM_SRC/meshTools/sets/ | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | sort | uniq | tr '\n' ' ')
+for t in $topo
+do
+    sed -i "s/__TS__/\\\\ $t\n    __TS__/g" $SFD
+done
+sed -i "/__TS__/d" $SFD
+
+
+echo "Look at beginning of the following files:"
+echo "    - Custom fields: ~/.vim/syntax/OpenFOAM/general/variables.vim"
+echo "    - Custom boundary conditons: ~/.vim/syntax/OpenFOAM/0/BC.vim"
+echo "    - Custom mesh changers: ~/.vim/syntax/OpenFOAM/constant/dynamicMeshDict.vim"
+echo "    - Custom function objects: ~/.vim/syntax/OpenFOAM/system/controlDict.vim"
+echo "    - Custom extrude models: ~/.vim/syntax/OpenFOAM/system/blockMeshDict.vim"
+
+
+#------------------------------------------------------------------------------
+echo -e "\n\n${nc}
+The package is now ready to use! Just open an OpenFOAM file!
+
+${BBLUE}OpenFOAM-vim${nc} by ${BORANGE}Giorgio Negrini${nc}
+
+Credits to ${BGREEN}F. Leinbach${nc} and ${BGREEN}T. Holzmann${nc} for the original extension
+-->  https://bitbucket.org/shor-ty/vimextensionopenfoam/src/master/  <--
+"
+
+
+#------------------------------------------------------------------------------
