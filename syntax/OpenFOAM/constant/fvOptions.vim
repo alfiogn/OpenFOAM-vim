@@ -6,68 +6,30 @@
 "----------------------------------------------"
 
 
+" User modifiable
+"-------------------------------------------------------------------------------
+
+    "- Highlight custom fvModels
+    "syntax keyword customFvOptions
+    "\ FvO1
+    "\ FvO2
+    "highlight link customFvOptions OpenFOAM_Types
+
+
 " fvOptions
 "-------------------------------------------------------------------------------
 
 
     "- Stuff for functions
-    syntax keyword fvOptionsTypes
-    \ fixedTemperatureConstraint
-    \ fixedValueConstraint
-    \ accelerationSource
-    \ buoyancyForce
-    \ explicitPorositySource
-    \ radialActuationDiskSource
-    \ solidificationMeltingSource
-    \ actuationDiskSource
-    \ damping
-    \ meanVelocityForce
-    \ patchMeanVelocityForce
-    \ rotorDiskSource
-    \ tabulatedAccelerationSource
-    \ buoyancyEnergy
-    \ effectivenessHeatExchangerSource
-    \ phaseLimitStabilization
-    \ solidEqulibriumEnergySource
-    \ volumeFractionSource
-    \ codedSource
-    \ semiImplicitSource
-    \ interRegionExplicitPorositySource
-    \ interRegionHeatTransfer
-    \ viscousHeating
-    highlight link fvOptionsTypes OpenFOAM_Types
-
-
-    "- Stuff for functions
     syntax keyword fvOptionsKeysLS
-    \ active
-    \ field
-    \ schemesField
-    \ autoSchemes
-    \ nCorr
-    \ resetOnStartUp
-    \ selectionMode
-    \ volumeMode
-    \ injectionRateSuSp
+    __FVOKEYS__
     highlight link fvOptionsKeysLS OpenFOAM_keyOnLeftSide
 
 
-    "- Identifier
-    syntax keyword fvOptionsIdent
-    \ scalarTransport
-    \ outputTime
-    \ scalarSemiImplicitSource
-    \ points
-    \ specific
-    \ absolute
-    highlight link fvOptionsIdent OpenFOAM_bC
-
-
-    "- Dictionaries
-    syntax match fvOptionsDictMap
-    \ "[a-zA-Z]\+Coeffs"
-    highlight link fvOptionsDictMap OpenFOAM_dictionary
-
+    "- Stuff for functions
+    syntax keyword fvOptionsTypes
+    __FVO__
+    highlight link fvOptionsTypes OpenFOAM_Types
 
 
 "-------------------------------------------------------------------------------
