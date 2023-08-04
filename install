@@ -11,6 +11,62 @@
 #------------------------------------------------------------------------------
 cd ${0%/*} || exit 1
 
+# Functions
+#------------------------------------------------------------------------------
+
+function getPatternTypeNames {
+    grepopts=$1
+    shift 1
+    grep -hr " TypeName(" $@ 2>/dev/null | $grepopts | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | sort | uniq | tr '\n' ' '
+}
+
+function getTypeNames {
+    grep -hr " TypeName(" $@ 2>/dev/null | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | sort | uniq | tr '\n' ' '
+}
+
+function getTypeKeys {
+    [[ $# -ne 0 ]] && grep -ri dict $@ 2>/dev/null | grep -v Coeffs | grep -o "\"[a-zA-Z0-9]*\"" | sort | uniq | sed "s/\"//g" | tr '\n' ' '
+}
+
+function getFunctionObjects {
+    local con=$(simpleFoam -listFunctionObjects 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    echo $con $mod $opt | sort | uniq
+}
+
+function getFvOptions {
+    local con=$(simpleFoam -listFvConstraints 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    local mod=$(simpleFoam -listFvModels 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    local opt=$(simpleFoam -listFvOptions 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    echo $con $mod $opt | sort | uniq
+}
+
+function getMomentumModels {
+    local oldmtm=$(simpleFoam -listTurbulenceModels 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    local newmtm=$(simpleFoam -listMomentumTransportModels 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    local laminar=$(find $FOAM_SRC -wholename *laminar/Stokes 2>/dev/null | xargs dirname)
+    local laminar=$(getTypeNames $laminar)
+    echo $oldmtm $newmtm $laminar | sort | uniq
+}
+
+function getBCs {
+    local sca=$(simpleFoam -listScalarBCs 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    local vec=$(simpleFoam -listVectorBCs 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    echo $sca $vec | sort | uniq
+}
+
+function subSequence {
+    file=$1
+    pattern=$2
+    shift 2
+    for i in $@
+    do
+        sed -i "s/$pattern/\\\\ $i\n    $pattern/g" $file
+    done
+}
+
+
+#
+#------------------------------------------------------------------------------
 error() {
     exec 1>&2
     while [ "$#" -ge 1 ]; do echo "$1"; shift; done
@@ -64,7 +120,7 @@ BBLUE='\033[1;34m'
 
 # Copy files only if the copied files are newer [-u]
 #------------------------------------------------------------------------------
-echo -e "\nInstalling OpenFOAM-vim for "$WM_PROJECT-$WM_PROJECT_VERSION"...\n"
+echo -e "\nInstalling OpenFOAM-vim for "$WM_PROJECT-$WM_PROJECT_VERSION" in $VIMFOLDER...\n"
 cp -r syntax/* $VIMFOLDER/syntax/
 cp ftdetect/* $VIMFOLDER/ftdetect/
 cp indent/* $VIMFOLDER/indent/
@@ -75,136 +131,106 @@ echo -e "    syntax keyword custom<Type>\n    highlight link custom<Type> OpenFO
 # Function 1 and 2
 echo "Functions"
 general=$VIMFOLDER/syntax/OpenFOAM/general/general.vim
-functions=$(grep -hr " TypeName(" $FOAM_SRC/OpenFOAM/primitives/functions/Function[12]* 2>/dev/null | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | tr '\n' ' ')
-for f in $functions
-do
-    sed -i "s/__FUNCTIONS12__/\\\\ $f\n    __FUNCTIONS12__/g" $general
-done
+functions=$(getTypeNames $FOAM_SRC/OpenFOAM/primitives/functions/Function[12]*)
+subSequence $general "__FUNCTIONS12__" $functions
 sed -i "/__FUNCTIONS12__/d" $general
 
 # Boundary conditions
 echo "Boundary conditions"
 BC=$VIMFOLDER/syntax/OpenFOAM/0/BC.vim
-bcs=$(grep -rl "class [a-zA-Z0-9]*FvPatch[A-Za-z]*Field" $FOAM_SRC 2>/dev/null | xargs dirname | awk -F'/' '{print $NF}' | sort | uniq | xargs -I file find $FOAM_SRC -name fileFvPatch*Field.H | xargs grep -h " TypeName(" | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | sort | uniq | sed -e "s/FvPatch::typeName_//g" -e "s/^[a-zA-Z0-9]*:://g" | tr '\n' ' ')
-for b in $bcs
-do
-    sed -i "s/__BCS__/\\\\ $b\n    __BCS__/g" $BC
-done
+bcs=$(getBCs)
+subSequence $BC "__BCS__" $bcs
 sed -i "/__BCS__/d" $BC
 # - keywords
-bcskeys=$(grep -rl "class [a-zA-Z0-9]*FvPatch[A-Za-z]*Field" $FOAM_SRC 2>/dev/null | xargs dirname | awk -F'/' '{print $NF}' | sort | uniq | xargs -I file find $FOAM_SRC -name fileFvPatch*Field.C | xargs grep [dD]ict | grep -o "\"[a-zA-Z]*\"" | sed "s/\"//g" | sort | uniq | tr '\n' ' ')
-for k in $bcskeys
+for b in $bcs
 do
-    sed -i "s/__BCSKEYS__/\\\\ $k\n    __BCSKEYS__/g" $BC
+    bfolder=$(find $FOAM_SRC -name $b)
+    bcskeys=$(getTypeKeys $bfolder)
+    subSequence $BC "__BCSKEYS__" $bcskeys
 done
 sed -i "/__BCSKEYS__/d" $BC
 
 # Mesh changers
 echo "Mesh changers"
 DYN=$VIMFOLDER/syntax/OpenFOAM/constant/dynamicMeshDict.vim
-ms=$(grep -hr " TypeName(" $FOAM_SRC/dynamicMesh/motionSolvers/ $FOAM_SRC/rigidBody* $FOAM_SRC/sixDoFRigidBody* 2>/dev/null | grep -i Motion | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | tr '\n' ' ')
-for m in $ms
-do
-    sed -i "s/__MS__/\\\\ $m\n    __MS__/g" $DYN
-done
+ms=$(getPatternTypeNames "grep -i Motion" $FOAM_SRC/dynamicMesh/motionSolvers/ $FOAM_SRC/rigidBody* $FOAM_SRC/sixDoFRigidBody*)
+subSequence $DYN "__MS__" $ms
 sed -i "/__MS__/d" $DYN
-sms=$(grep -hr " TypeName(" $FOAM_SRC/dynamicMesh/motionSolvers/ $FOAM_SRC/rigidBody* $FOAM_SRC/sixDoFRigidBody* 2>/dev/null | grep -vi Motion | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | sort | uniq | tr '\n' ' ')
-for s in $sms
-do
-    sed -i "s/__SMS__/\\\\ $s\n    __SMS__/g" $DYN
-done
+sms=$(getPatternTypeNames "grep -vi Motion" $FOAM_SRC/dynamicMesh/motionSolvers/ $FOAM_SRC/rigidBody* $FOAM_SRC/sixDoFRigidBody*)
+subSequence $DYN "__SMS__" $sms
 sed -i "/__SMS__/d" $DYN
 # - keywords
-mckeys=$(find $FOAM_SRC/dynamicMesh/ $FOAM_SRC/rigidBody* $FOAM_SRC/sixDoFRigidBody* -name "*.C" -type f 2>/dev/null | xargs grep -i Dict | grep -v Coeffs | grep -o "\"[a-zA-Z0-9]*\"" | sort | uniq | sed "s/\"//g" | tr '\n' ' ')
-for m in $mckeys
+for m in $ms $sms
 do
-    sed -i "s/__MCKEYS__/\\\\ $m\n    __MCKEYS__/g" $DYN
+    mfolder=$(find $FOAM_SRC -name $m)
+    mckeys=$(getTypeKeys $mfolder)
+    subSequence $DYN "__MCKEYS__" $bcskeys
 done
 sed -i "/__MCKEYS__/d" $DYN
 
 # Function objects
 echo "Function objects"
 CD=$VIMFOLDER/syntax/OpenFOAM/system/controlDict.vim
-functions=$(grep -hr " TypeName(" $FOAM_SRC/functionObjects 2>/dev/null | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | sort | uniq | tr '\n' ' ')
-for f in $functions
-do
-    sed -i "s/__FOS__/\\\\ $f\n    __FOS__/g" $CD
-done
+functions=$(getFunctionObjects)
+subSequence $CD "__FOS__" $functions
 sed -i "/__FOS__/d" $CD
 # - keywords
-fokeys=$(find $FOAM_SRC/functionObjects -name "*.C" -type f 2>/dev/null | xargs grep -i Dict | grep -v Coeffs | grep -o "\"[a-zA-Z0-9]*\"" | sort | uniq | sed "s/\"//g" | tr '\n' ' ')
-for f in $fokeys
+for f in $functions
 do
-    sed -i "s/__FOKEYS__/\\\\ $f\n    __FOKEYS__/g" $CD
+    ffolder=$(find $FOAM_SRC -name $f)
+    fokeys=$(getTypeKeys $ffolder)
+    subSequence $CD "__FOKEYS__" $fokeys
 done
 sed -i "/__FOKEYS__/d" $CD
 
 # Algebraic solvers
 echo "Solvers"
 FVS=$VIMFOLDER/syntax/OpenFOAM/system/fvSolution.vim
-sol=$(find $FOAM_SRC/OpenFOAM/matrices/lduMatrix/*ers -name "*.H" 2>/dev/null | xargs grep -h " TypeName(" | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | sort | uniq | tr '\n' ' ')
-for s in $sol
-do
-    sed -i "s/__SOL__/\\\\ $s\n    __SOL__/g" $FVS
-done
+sol=$(getTypeNames $FOAM_SRC/OpenFOAM/matrices/lduMatrix/*ers)
+subSequence $FVS "__SOL__" $sol
 sed -i "/__SOL__/d" $FVS
 
 # Discretization schemes
 echo "Discretisation schemes"
 FVS=$VIMFOLDER/syntax/OpenFOAM/system/fvSchemes.vim
-sch=$(grep -hr " TypeName(" $FOAM_SRC/finiteVolume/finiteVolume/*Schemes $FOAM_SRC/finiteVolume/interpolation/ 2>/dev/null | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | tr '\n' ' ')
-for s in $sch
-do
-    sed -i "s/__SCH__/\\\\ $s\n    __SCH__/g" $FVS
-done
+sch=$(getTypeNames $FOAM_SRC/finiteVolume/finiteVolume/*Schemes $FOAM_SRC/finiteVolume/interpolation/)
+subSequence $FVS "__SCH__" $sch
 sed -i "/__SCH__/d" $FVS
 
 # Topo sets
 echo "Sets"
 SFD=$VIMFOLDER/syntax/OpenFOAM/system/setFieldsDict.vim
-topo=$(grep -hr " TypeName(" $FOAM_SRC/meshTools/sets/ 2>/dev/null | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | sort | uniq | tr '\n' ' ')
-for t in $topo
-do
-    sed -i "s/__TS__/\\\\ $t\n    __TS__/g" $SFD
-done
+topo=$(getTypeNames $FOAM_SRC/meshTools/sets/)
+subSequence $SFD "__TS__" $topo
 sed -i "/__TS__/d" $SFD
 
 # Fv options/models/constraints
 echo "Equation sources"
 FVO=$VIMFOLDER/syntax/OpenFOAM/constant/fvOptions.vim
-fvs=$(grep -hr " TypeName(" $FOAM_SRC/fvConstraints $FOAM_SRC/fvModels $FOMA_SRC/fvOptions 2>/dev/null | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | sort | uniq | tr '\n' ' ')
-for f in $fvs
-do
-    sed -i "s/__FVO__/\\\\ $f\n    __FVO__/g" $FVO
-done
+fvs=$(getFvOptions)
+subSequence $FVO "__FVO__" $fvs
 sed -i "/__FVO__/d" $FVO
 # - keywords
-fvokeys=$(find $FOAM_SRC/fvConstraints $FOAM_SRC/fvModels $FOMA_SRC/fvOptions -name "*.C" -type f 2>/dev/null | xargs grep -i Dict | grep -v Coeffs | grep -o "\"[a-zA-Z0-9]*\"" | sort | uniq | sed "s/\"//g" | tr '\n' ' ')
-for f in $fvokeys
+for f in $fvs
 do
-    sed -i "s/__FVOKEYS__/\\\\ $f\n    __FVOKEYS__/g" $FVO
+    ffolder=$(find $FOAM_SRC -name $f)
+    fvokeys=$(getTypeKeys $ffolder)
+    subSequence $FVO "__FVOKEYS__" $fvokeys
 done
 sed -i "/__FVOKEYS__/d" $FVO
 
 # Turbulence models
 echo "Momentum models"
 MT=$VIMFOLDER/syntax/OpenFOAM/constant/momentumTransport.vim
-mtm=$(echo $(simpleFoam -listMomentumTransportModels 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ') $(simpleFoam -listTurbulenceModels 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' '))
-mtm=$(echo $mtm $(grep -hr " TypeName(" $(find $FOAM_SRC -wholename *laminar/Stokes 2>/dev/null | xargs dirname) 2>/dev/null | sed -e "s/TypeName//g" -e "s/[\"(); ]//g" | sort | uniq | tr '\n' ' '))
-for m in $mtm
-do
-    sed -i "s/__TT__/\\\\ $m\n    __TT__/g" $MT
-done
+mtm=$(getMomentumModels)
+subSequence $MT "__TT__" $mtm
 sed -i "/__TT__/d" $MT
 # - keywords and subdictionaries
 for m in $mtm
 do
     mfolder=$(find $FOAM_SRC -name $m)
-    mtmkeys=$(grep -i Dict $mfolder/*.C 2>/dev/null | grep -v Coeffs | grep -o "\"[a-zA-Z0-9]*\"" | sort | uniq | sed "s/\"//g" | tr '\n' ' ')
-    for mk in $mtmkeys
-    do
-        sed -i "s/__TTKEYS__/\\\\ $mk\n    __TTKEYS__/g" $MT
-    done
+    mtmkeys=$(getTypeKeys $mfolder)
+    subSequence $MT "__TTKEYS__" $mtmkeys
 done
 sed -i "/__TTKEYS__/d" $MT
 
