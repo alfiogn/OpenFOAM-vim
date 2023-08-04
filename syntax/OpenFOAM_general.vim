@@ -24,12 +24,6 @@ let s:filepath3= join([ s:plugindir ,"syntax/OpenFOAM/system/fvSchemes.vim"],"/"
 exec "badd ".s:filepath3
 
 
-" General stuff
-"-------------------------------------------------------------------------------
-runtime syntax/OpenFOAM/general/general.vim
-runtime syntax/OpenFOAM/general/variables.vim
-
-
 " Folder system
 "-------------------------------------------------------------------------------
 runtime syntax/OpenFOAM/system/controlDict.vim
@@ -44,10 +38,8 @@ runtime syntax/OpenFOAM/system/snappyHexMeshDict.vim
 " Folder constant
 "-------------------------------------------------------------------------------
 runtime syntax/OpenFOAM/constant/fvOptions.vim
-"runtime syntax/OpenFOAM/constant/RASProperties.vim
-"runtime syntax/OpenFOAM/constant/turbulenceProperties.vim
-"runtime syntax/OpenFOAM/constant/transportProperties.vim
 runtime syntax/OpenFOAM/constant/momentumTransport.vim
+" TODO: update the following
 runtime syntax/OpenFOAM/constant/radiationProperties.vim
 runtime syntax/OpenFOAM/constant/regionProperties.vim
 
@@ -57,15 +49,15 @@ runtime syntax/OpenFOAM/constant/regionProperties.vim
 runtime syntax/OpenFOAM/constant/polyMesh/boundary.vim
 
 
-" Folder 0
-"-------------------------------------------------------------------------------
-runtime syntax/OpenFOAM/0/foamVariables.vim
-runtime syntax/OpenFOAM/0/BC.vim
-
-
 " Source mapping of code streams
 "-------------------------------------------------------------------------------
 runtime syntax/OpenFOAM_codeStream.vim
+
+
+" General stuff
+"-------------------------------------------------------------------------------
+runtime syntax/OpenFOAM/general/general.vim
+runtime syntax/OpenFOAM/general/variables.vim
 
 
 " Source mapping of highlightgroups to standard highlightgroups
