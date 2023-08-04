@@ -17,9 +17,17 @@ autocmd FileType OpenFOAM_cpp imap <buffer> <F5> <esc>:wa<CR>:exec '!wmake -j 4 
 
 
 ## Installation ##
-Just run the `install` script and the plugin will be installed into your `$HOME/.vim` folder.
+Just run the `install` script and the plugin will be installed into your `$VIMFOLDER` folder,
+the folder where the VIM plugins are kept. You can define it also in the `install` script.
+Default is `$HOME/.vim`.
 
 An OpenFOAM version must have been sourced (`source OpenFOAM-X/etc/bashrc`).
+
+If the installation procedure fails, you can run the following command
+```
+cp -r of-vim-10/* $VIMFOLDER/
+```
+where in `of-vim-10` there is a pre-run version of the plugin.
 
 Note: some keywords are retrieved directly from the source code of OpenFOAM,
 check the compatibility section if something goes wrong.
@@ -31,4 +39,7 @@ The plugin has been tested on:
 * OpenFOAM-7 and OpenFOAM-10
 
 ## TODO ##
-- All the constant folder
+* Improve the research of types, keyword, etc. in the OpenFOAM source code
+* Improve readability of `install` script in terms of the verbosity of the  bash commands
+* Files `radiationProperties`, `regionProperties` need an update for more recent OpenFOAM versions
+
