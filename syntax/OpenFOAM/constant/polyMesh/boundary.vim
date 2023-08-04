@@ -21,6 +21,7 @@
     \ mappedWall
     \ cyclicAMI
     \ cyclicACMI
+    \ nonConformal
     \ noOrdering
     \ coincidentFullMatch
     \ rotational
