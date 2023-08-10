@@ -39,6 +39,7 @@ The plugin has been tested on:
 * OpenFOAM-7 and OpenFOAM-10
 
 ## TODO ##
+* Add some C++ OpenFOAM classes to `OpenFOAM_cpp.vim`
 * Improve the research of types, keyword, etc. in the OpenFOAM source code
 * Improve readability of `install` script in terms of the verbosity of the  bash commands
 * Files `radiationProperties`, `regionProperties` need an update for more recent OpenFOAM versions
