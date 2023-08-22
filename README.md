@@ -21,6 +21,9 @@ Just run the `install` script and the plugin will be installed into your `$VIMFO
 the folder where the VIM plugins are kept. You can define it also in the `install` script.
 Default is `$HOME/.vim`.
 
+The same thing can be done with the `$SOLVER` variable to specify which solver has to be
+used to retrieve OpenFOAM typenames.
+
 An OpenFOAM version must have been sourced (`source OpenFOAM-X/etc/bashrc`).
 
 If the installation procedure fails, you can run the following command

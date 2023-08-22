@@ -29,28 +29,28 @@ function getTypeKeys {
 }
 
 function getFunctionObjects {
-    local con=$(simpleFoam -listFunctionObjects 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    local con=$($SOLVER -listFunctionObjects 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
     echo $con $mod $opt | sort | uniq
 }
 
 function getFvOptions {
-    local con=$(simpleFoam -listFvConstraints 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
-    local mod=$(simpleFoam -listFvModels 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
-    local opt=$(simpleFoam -listFvOptions 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    local con=$($SOLVER -listFvConstraints 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    local mod=$($SOLVER -listFvModels 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    local opt=$($SOLVER -listFvOptions 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
     echo $con $mod $opt | sort | uniq
 }
 
 function getMomentumModels {
-    local oldmtm=$(simpleFoam -listTurbulenceModels 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
-    local newmtm=$(simpleFoam -listMomentumTransportModels 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    local oldmtm=$($SOLVER -listTurbulenceModels 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    local newmtm=$($SOLVER -listMomentumTransportModels 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
     local laminar=$(find $FOAM_SRC -wholename *laminar/Stokes 2>/dev/null | xargs dirname)
     local laminar=$(getTypeNames $laminar)
     echo $oldmtm $newmtm $laminar | sort | uniq
 }
 
 function getBCs {
-    local sca=$(simpleFoam -listScalarBCs 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
-    local vec=$(simpleFoam -listVectorBCs 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    local sca=$($SOLVER -listScalarBCs 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
+    local vec=$($SOLVER -listVectorBCs 2>/dev/null | grep "^[a-zA-Z]*$" | sed /^$/d | tr '\n' ' ')
     echo $sca $vec | sort | uniq
 }
 
@@ -79,6 +79,10 @@ error() {
 # Define the folder where your plugins are stored
 #------------------------------------------------------------------------------
 [[ ! $VIMFOLDER = "" ]] || VIMFOLDER=$HOME/.vim
+
+# Define the solver to find OpenFOAM typenames
+#------------------------------------------------------------------------------
+[[ ! $SOLVER = "" ]] || SOLVER=simpleFoam
 
 # Color definition for nice output and playing with bash
 #------------------------------------------------------------------------------
