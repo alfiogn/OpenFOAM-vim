@@ -11,7 +11,7 @@
 augroup OpenFOAM
     au!
     " Check all files but ...
-    au BufEnter *\(.m4|.py\)\@<! :call CheckOpenFOAM()
+    au BufEnter *\(.m4\|.py\)\@<! :call CheckOpenFOAM()
 augroup end
 
 function! CheckOpenFOAM()
