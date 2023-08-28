@@ -168,7 +168,7 @@ for m in $ms $sms
 do
     mfolder=$(find $FOAM_SRC -name $m)
     mckeys=$(getTypeKeys $mfolder)
-    subSequence $DYN "__MCKEYS__" $bcskeys
+    subSequence $DYN "__MCKEYS__" $mckeys
 done
 sed -i "/__MCKEYS__/d" $DYN
 
