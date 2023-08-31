@@ -11,7 +11,7 @@
 augroup OpenFOAM
     au!
     " Check all files but ...
-    au BufEnter *\(.m4|.py\)\@<! :call CheckOpenFOAM()
+    au BufEnter *\(.m4\|.py\)\@<! :call CheckOpenFOAM()
 augroup end
 
 function! CheckOpenFOAM()
@@ -85,10 +85,12 @@ function! CheckOpenFOAM()
         "- If keyword 'FoamFile' not found, search for the OpenFOAM.org header
         "-----------------------------------------------------------------------
         elseif (getline(cnum) =~ '| OpenFOAM:')
-            " Check if it is a c++ file
-            "-------------------------------------------------------------------------------
+            " Check if it is a c++ file or other special extension
+            "-------------------------------------------------------------------
             if (&ft =~ 'cpp')
                 set ft=OpenFOAM_cpp
+            elseif (&ft =~ 'sh')
+                set ft=sh
             else
                 set ft=OpenFOAM_general
             endif
@@ -98,7 +100,7 @@ function! CheckOpenFOAM()
         "-----------------------------------------------------------------------
         elseif (cnum == 15)
             "- If extension is the standard one of OpenFOAM source codes
-            "-----------------------------------------------------------------------
+            "-------------------------------------------------------------------
             if (expand("%:e") =~ '[HC]')
                 set ft=OpenFOAM_cpp
             endif
