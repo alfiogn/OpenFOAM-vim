@@ -91,6 +91,8 @@ function! CheckOpenFOAM()
                 set ft=OpenFOAM_cpp
             elseif (&ft =~ 'sh')
                 set ft=sh
+            elseif (&ft =~ 'conf')
+                set ft=conf
             else
                 set ft=OpenFOAM_general
             endif
@@ -99,6 +101,7 @@ function! CheckOpenFOAM()
         "- If keyword 'FoamFile' not found within the first 15 lines exit
         "-----------------------------------------------------------------------
         elseif (cnum == 15)
+
             "- If extension is the standard one of OpenFOAM source codes
             "-------------------------------------------------------------------
             if (expand("%:e") =~ '[HC]')
