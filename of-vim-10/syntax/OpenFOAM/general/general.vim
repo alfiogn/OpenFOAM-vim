@@ -87,7 +87,7 @@
 
     "- Highlight all user defined variables
     syntax match userDefVar
-    \ "\$\{1}[A-Za-z0-9\-\_]\+"
+    \ "\$\{1}[\.\/\$!A-Za-z0-9\-\_]\+"
     highlight link userDefVar OpenFOAM_userDefVar
 
     "- Highlight strings ""
@@ -131,39 +131,7 @@
 
     "- Function1 and Function2 list
     syntax keyword Function12Key
-    \ none
-    \ quarterSineRamp
-    \ halfCosineRamp
-    \ one
-    \ uniformTable
-    \ nonUniformTable
-    \ coded
-    \ quarterCosineRamp
-    \ foam
-    \ csv
-    \ TableReader
-    \ embedded
-    \ table
-    \ square
-    \ reverseRamp
-    \ linearRamp
-    \ Function1
-    \ constant
-    \ squarePulse
-    \ zero
-    \ uniform
-    \ sine
-    \ scale
-    \ polynomial
-    \ quadraticRamp
-    \ none
-    \ one
-    \ coded
-    \ constant
-    \ zero
-    \ Function2
-    \ scale
-    \ uniformTable
+    __FUNCTIONS12__
     highlight link Function12Key OpenFOAM_Function12Key
 
 
