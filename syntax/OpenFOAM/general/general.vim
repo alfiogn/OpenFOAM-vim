@@ -87,7 +87,7 @@
 
     "- Highlight all user defined variables
     syntax match userDefVar
-    \ "\$\{1}[A-Za-z0-9\-\_]\+"
+    \ "\$\{1}[\.\/\$!A-Za-z0-9\-\_]\+"
     highlight link userDefVar OpenFOAM_userDefVar
 
     "- Highlight strings ""
