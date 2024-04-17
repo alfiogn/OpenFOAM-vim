@@ -98,16 +98,9 @@ function! CheckOpenFOAM()
             endif
 
 
-        "- If keyword 'FoamFile' not found within the first 15 lines exit
-        "-----------------------------------------------------------------------
+        ""- If keyword 'FoamFile' not found within the first 15 lines exit
+        ""-----------------------------------------------------------------------
         elseif (cnum == 15)
-
-            "- If extension is the standard one of OpenFOAM source codes
-            "-------------------------------------------------------------------
-            if (expand("%:e") =~ '[HC]')
-                set ft=OpenFOAM_cpp
-            endif
-
             break
         endif
 
